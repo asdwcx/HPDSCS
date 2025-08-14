@@ -1,0 +1,529 @@
+syntax = "proto3";
+
+package chat;
+
+// 消息类型枚举
+enum MsgType {
+    LOGIN_MSG = 0;
+    LOGIN_MSG_ACK = 1;
+    REG_MSG = 2;
+    REG_MSG_ACK = 3;
+    ONE_CHAT_MSG = 4;
+    ADD_FRIEND_MSG = 5;         // 添加好友请求
+    ADD_FRIEND_NOTIFY = 6;      // 好友请求通知
+    ADD_FRIEND_RESPONSE = 7;    // 好友请求回复
+    ADD_FRIEND_RESULT = 8;      // 添加好友最终结果
+    CREATE_GROUP_MSG = 9;
+    ADD_GROUP_MSG = 10;
+    GROUP_CHAT_MSG = 11;
+    LOGINOUT_MSG = 12;
+    GROUP_INVITE_NOTIFY = 13;   // 群邀请通知
+    JOIN_GROUP_MSG = 14;        // 申请加入群聊
+    JOIN_GROUP_NOTIFY = 15;     // 加群申请通知（给管理员）
+    APPROVE_JOIN_MSG = 16;      // 审核加群申请
+    JOIN_GROUP_RESULT = 17;     // 加群结果通知
+    GROUP_NOTIFY = 18;          // 群通知（新成员加入等）
+    GROUP_HISTORY_MSG = 19;     // 群聊历史记录查询
+    GROUP_SEARCH_MSG = 20;      // 群消息搜索
+    GROUP_INFO_MSG = 21;        // 群信息查询
+    QUIT_GROUP_MSG = 22;        // 退出群聊
+    
+    // 文件传输相关消息类型
+    FILE_UPLOAD_MSG = 30;       // 文件上传请求
+    FILE_UPLOAD_RSP = 31;       // 文件上传响应
+    FILE_CHUNK_MSG = 32;        // 文件分片传输
+    FILE_CHUNK_RSP = 33;        // 文件分片响应
+    FILE_DOWNLOAD_MSG = 34;     // 文件下载请求
+    FILE_DOWNLOAD_RSP = 35;     // 文件下载响应
+    FILE_CHUNK_DOWN_MSG = 36;   // 文件分片下载
+    FILE_CHUNK_DOWN_RSP = 37;   // 文件分片下载响应
+}
+}
+
+// 用户信息
+message User {
+    int32 id = 1;
+    string name = 2;
+    string password = 3;
+    string state = 4;
+}
+
+// 好友信息
+message Friend {
+    int32 id = 1;
+    string name = 2;
+    string state = 3;
+}
+
+// 群组信息
+message Group {
+    int32 id = 1;
+    string name = 2;
+    string desc = 3;
+    repeated User users = 4;
+}
+
+// 离线消息
+message OfflineMessage {
+    int32 from_id = 1;
+    string message = 2;
+    string time = 3;
+}
+
+// 登录请求
+message LoginRequest {
+    MsgType msgid = 1;
+    int32 id = 2;
+    string password = 3;
+}
+
+// 登录响应
+message LoginResponse {
+    MsgType msgid = 1;
+    int32 errno = 2;
+    string errmsg = 3;
+    User user = 4;
+    repeated Friend friends = 5;
+    repeated Group groups = 6;
+    repeated OfflineMessage offline_msgs = 7;
+}
+
+// 注册请求
+message RegisterRequest {
+    MsgType msgid = 1;
+    string name = 2;
+    string password = 3;
+}
+
+// 注册响应
+message RegisterResponse {
+    MsgType msgid = 1;
+    int32 errno = 2;
+    string errmsg = 3;
+    int32 id = 4;
+}
+
+// 一对一聊天消息
+message OneChatMessage {
+    MsgType msgid = 1;
+    int32 id = 2;
+    string name = 3;
+    int32 to = 4;
+    string msg = 5;
+    string time = 6;
+}
+
+// 添加好友请求（用户A发起）
+message AddFriendRequest {
+    MsgType msgid = 1;
+    int32 id = 2;           // 发起者ID
+    int32 friendid = 3;     // 目标用户ID
+    string message = 4;     // 请求消息，如"我是张三，想和你成为好友"
+}
+
+// 好友请求通知（服务器发送给被添加的用户B）
+message AddFriendNotify {
+    MsgType msgid = 1;
+    int32 from_id = 2;      // 发起者ID
+    string from_name = 3;   // 发起者昵称
+    string message = 4;     // 请求消息
+}
+
+// 好友请求回复（用户B的回复）
+message AddFriendReply {
+    MsgType msgid = 1;
+    int32 from_id = 2;      // 发起好友请求的用户ID
+    int32 to_id = 3;        // 被请求的用户ID（自己）
+    bool accept = 4;        // true=同意，false=拒绝
+    string message = 5;     // 回复消息，如"很高兴认识你"或"抱歉，暂时不方便"
+}
+
+// 添加好友最终结果（服务器发送给发起者A）
+message AddFriendResult {
+    MsgType msgid = 1;
+    int32 errno = 2;        // 0=成功，1=失败，2=被拒绝，3=用户不存在
+    string errmsg = 3;      // 结果消息
+    int32 friend_id = 4;    // 目标用户ID
+    string friend_name = 5; // 目标用户昵称
+    string reply_msg = 6;   // 对方的回复消息
+}
+
+// 创建群组请求
+message CreateGroupRequest {
+    MsgType msgid = 1;
+    int32 id = 2;                    // 创建者ID
+    string groupname = 3;            // 群名称
+    string groupdesc = 4;            // 群描述（可选）
+    repeated int32 member_ids = 5;   // 初始成员ID列表
+}
+
+// 创建群组响应
+message CreateGroupResponse {
+    MsgType msgid = 1;
+    int32 errno = 2;                 // 0=成功，1=群名重复，2=成员ID无效，3=其他错误
+    string errmsg = 3;               // 结果消息
+    int32 group_id = 4;              // 新创建的群组ID
+    string group_name = 5;           // 群组名称
+    repeated User members = 6;       // 群成员信息列表
+}
+
+// 群邀请通知（服务器发送给被邀请的成员）
+message GroupInviteNotify {
+    MsgType msgid = 1;
+    int32 group_id = 2;              // 群组ID
+    string group_name = 3;           // 群组名称
+    string group_desc = 4;           // 群组描述
+    int32 inviter_id = 5;            // 邀请者ID
+    string inviter_name = 6;         // 邀请者昵称
+}
+
+// 加入群组请求
+message AddGroupRequest {
+    MsgType msgid = 1;
+    int32 id = 2;
+    int32 groupid = 3;
+}
+
+// 加入群组响应
+message AddGroupResponse {
+    MsgType msgid = 1;
+    int32 errno = 2;
+    string errmsg = 3;
+}
+
+// 申请加入群聊请求（用户发起）
+message JoinGroupRequest {
+    MsgType msgid = 1;
+    int32 user_id = 2;          // 申请者ID
+    int32 group_id = 3;         // 目标群组ID
+}
+
+// 加群申请通知（服务器发送给群主/管理员）
+message JoinGroupNotify {
+    MsgType msgid = 1;
+    int32 group_id = 2;         // 群组ID
+    string group_name = 3;      // 群组名称
+    int32 applicant_id = 4;     // 申请者ID
+    string applicant_name = 5;  // 申请者昵称
+    string apply_time = 6;      // 申请时间
+}
+
+// 审核加群申请（群主/管理员回复）
+message ApproveJoinRequest {
+    MsgType msgid = 1;
+    int32 group_id = 2;         // 群组ID
+    int32 applicant_id = 3;     // 申请者ID
+    int32 approver_id = 4;      // 审核者ID
+    bool approve = 5;           // true=同意，false=拒绝
+    string message = 6;         // 回复消息
+}
+
+// 加群结果通知（服务器发送给申请者）
+message JoinGroupResult {
+    MsgType msgid = 1;
+    int32 errno = 2;            // 0=成功，1=失败，2=被拒绝，3=群不存在，4=已是成员，5=群已满
+    string errmsg = 3;          // 结果消息
+    int32 group_id = 4;         // 群组ID
+    string group_name = 5;      // 群组名称
+    string reply_msg = 6;       // 审核者回复消息
+}
+
+// 群通知消息（新成员加入、成员退出等）
+message GroupNotifyMessage {
+    MsgType msgid = 1;
+    int32 group_id = 2;         // 群组ID
+    string group_name = 3;      // 群组名称
+    int32 user_id = 4;          // 相关用户ID
+    string user_name = 5;       // 相关用户昵称
+    string notify_type = 6;     // 通知类型: "join", "leave", "kick"
+    string message = 7;         // 通知消息
+}
+
+// 群聊消息
+message GroupChatMessage {
+    MsgType msgid = 1;
+    int32 id = 2;
+    string name = 3;
+    int32 groupid = 4;
+    string msg = 5;
+    string time = 6;
+    repeated int32 users = 7;
+    uint64 sequence_id = 8;     // 消息序列号（用于确保正确时序）
+}
+
+// 注销请求
+message LoginoutRequest {
+    MsgType msgid = 1;
+    int32 id = 2;
+}
+
+// 注销响应
+message LoginoutResponse {
+    MsgType msgid = 1;
+    int32 errno = 2;
+    string errmsg = 3;
+}
+
+// 通用消息包装器
+message MessageWrapper {
+    MsgType msgid = 1;
+    bytes data = 2;
+}
+
+// 群聊历史记录查询请求
+message GroupHistoryRequest {
+    MsgType msgid = 1;
+    int32 user_id = 2;          // 查询者ID
+    int32 group_id = 3;         // 群组ID
+    int32 count = 4;            // 查询消息数量
+    int64 before_time = 5;      // 查询此时间之前的消息（可选，用于分页）
+}
+
+// 群聊历史记录响应
+message GroupHistoryResponse {
+    MsgType msgid = 1;
+    int32 errno = 2;            // 错误码
+    string errmsg = 3;          // 错误消息
+    repeated HistoryMessage messages = 4;  // 历史消息列表
+}
+
+// 历史消息条目
+message HistoryMessage {
+    int32 user_id = 1;          // 发送者ID
+    string user_name = 2;       // 发送者昵称
+    string user_role = 3;       // 发送者角色: "creator", "admin", "normal"
+    string content = 4;         // 消息内容
+    string time = 5;            // 发送时间
+    uint64 sequence_id = 6;     // 消息序列号（用于确保正确时序）
+}
+
+// 群消息搜索请求
+message GroupSearchRequest {
+    MsgType msgid = 1;
+    int32 user_id = 2;          // 查询者ID
+    int32 group_id = 3;         // 群组ID
+    string keyword = 4;         // 搜索关键词
+    int32 limit = 5;            // 结果数量限制（可选）
+}
+
+// 群消息搜索响应
+message GroupSearchResponse {
+    MsgType msgid = 1;
+    int32 errno = 2;            // 错误码
+    string errmsg = 3;          // 错误消息
+    string keyword = 4;         // 搜索关键词
+    repeated HistoryMessage results = 5;  // 搜索结果
+}
+
+// 群信息查询请求
+message GroupInfoRequest {
+    MsgType msgid = 1;
+    int32 user_id = 2;          // 查询者ID
+    int32 group_id = 3;         // 群组ID
+}
+
+// 群信息查询响应
+message GroupInfoResponse {
+    MsgType msgid = 1;
+    int32 errno = 2;            // 错误码
+    string errmsg = 3;          // 错误消息
+    Group group_info = 4;       // 群组信息
+    repeated GroupMemberInfo members = 5;  // 群成员信息
+}
+
+// 群成员信息
+message GroupMemberInfo {
+    int32 user_id = 1;          // 用户ID
+    string user_name = 2;       // 用户昵称
+    string role = 3;            // 角色: "creator", "admin", "normal"
+    string state = 4;           // 在线状态: "online", "offline"
+    string join_time = 5;       // 加入时间
+}
+
+// 退出群聊请求
+message QuitGroupRequest {
+    MsgType msgid = 1;
+    int32 user_id = 2;          // 用户ID
+    int32 group_id = 3;         // 群组ID
+}
+
+// 退出群聊响应
+message QuitGroupResponse {
+    MsgType msgid = 1;
+    int32 errno = 2;            // 错误码
+    string errmsg = 3;          // 错误消息
+    int32 group_id = 4;         // 群组ID
+    string group_name = 5;      // 群组名称
+}
+
+// ==================== 文件传输相关消息 ====================
+
+// 文件上传请求
+message FileUploadRequest {
+    MsgType msgid = 1;
+    int32 user_id = 2;          // 用户ID
+    string filename = 3;        // 文件名
+    uint64 filesize = 4;        // 文件大小（字节）
+    string file_hash = 5;       // 文件哈希值（MD5或SHA256）
+    string file_type = 6;       // 文件类型/MIME类型
+    uint32 chunk_size = 7;      // 分片大小
+    string upload_id = 8;       // 上传会话ID（用于断点续传）
+}
+
+// 文件上传响应
+message FileUploadResponse {
+    MsgType msgid = 1;
+    int32 errno = 2;            // 错误码：0=成功，1=文件已存在，2=空间不足，3=文件过大，4=其他错误
+    string errmsg = 3;          // 错误消息
+    string file_id = 4;         // 服务器分配的文件ID
+    string upload_id = 5;       // 上传会话ID
+    repeated uint32 uploaded_chunks = 6;  // 已上传的分片序号（用于断点续传）
+    uint32 next_chunk_index = 7;  // 下一个要上传的分片序号
+}
+
+// 文件分片传输
+message FileChunkMessage {
+    MsgType msgid = 1;
+    string upload_id = 2;       // 上传会话ID
+    string file_id = 3;         // 文件ID
+    uint32 chunk_index = 4;     // 分片序号（从0开始）
+    uint32 chunk_size = 5;      // 当前分片大小
+    bytes chunk_data = 6;       // 分片数据（Base64编码或二进制）
+    string chunk_hash = 7;      // 分片哈希值
+    bool is_last_chunk = 8;     // 是否为最后一个分片
+    uint32 total_chunks = 9;    // 总分片数
+}
+
+// 文件分片传输响应
+message FileChunkResponse {
+    MsgType msgid = 1;
+    int32 errno = 2;            // 错误码：0=成功，1=分片校验失败，2=分片序号错误，3=上传会话不存在
+    string errmsg = 3;          // 错误消息
+    string upload_id = 4;       // 上传会话ID
+    uint32 received_chunk_index = 5;  // 已接收的分片序号
+    uint32 next_chunk_index = 6;      // 下一个期望的分片序号
+    float upload_progress = 7;        // 上传进度（0.0-1.0）
+    bool upload_complete = 8;         // 上传是否完成
+}
+
+// 文件下载请求
+message FileDownloadRequest {
+    MsgType msgid = 1;
+    int32 user_id = 2;          // 用户ID
+    string file_id = 3;         // 文件ID
+    string filename = 4;        // 文件名（可选，用于获取指定名称的文件）
+    uint32 chunk_size = 5;      // 请求的分片大小
+    uint32 start_chunk = 6;     // 起始分片序号（用于断点续传）
+    string download_id = 7;     // 下载会话ID
+}
+
+// 文件下载响应
+message FileDownloadResponse {
+    MsgType msgid = 1;
+    int32 errno = 2;            // 错误码：0=成功，1=文件不存在，2=无权限，3=其他错误
+    string errmsg = 3;          // 错误消息
+    string file_id = 4;         // 文件ID
+    string filename = 5;        // 文件名
+    uint64 filesize = 6;        // 文件大小
+    string file_hash = 7;       // 文件哈希值
+    string file_type = 8;       // 文件类型
+    uint32 total_chunks = 9;    // 总分片数
+    uint32 chunk_size = 10;     // 分片大小
+    string download_id = 11;    // 下载会话ID
+    uint32 start_chunk_index = 12;  // 开始下载的分片序号
+}
+
+// 文件分片下载请求
+message FileChunkDownloadRequest {
+    MsgType msgid = 1;
+    string download_id = 2;     // 下载会话ID
+    string file_id = 3;         // 文件ID
+    uint32 chunk_index = 4;     // 请求的分片序号
+}
+
+// 文件分片下载响应
+message FileChunkDownloadResponse {
+    MsgType msgid = 1;
+    int32 errno = 2;            // 错误码：0=成功，1=分片不存在，2=下载会话无效
+    string errmsg = 3;          // 错误消息
+    string download_id = 4;     // 下载会话ID
+    string file_id = 5;         // 文件ID
+    uint32 chunk_index = 6;     // 分片序号
+    uint32 chunk_size = 7;      // 分片大小
+    bytes chunk_data = 8;       // 分片数据
+    string chunk_hash = 9;      // 分片哈希值
+    bool is_last_chunk = 10;    // 是否为最后一个分片
+    float download_progress = 11;  // 下载进度（0.0-1.0）
+}
+
+// 文件信息查询请求
+message FileInfoRequest {
+    MsgType msgid = 1;
+    int32 user_id = 2;          // 用户ID
+    string file_id = 3;         // 文件ID
+}
+
+// 文件信息查询响应
+message FileInfoResponse {
+    MsgType msgid = 1;
+    int32 errno = 2;            // 错误码
+    string errmsg = 3;          // 错误消息
+    FileInfo file_info = 4;     // 文件信息
+}
+
+// 文件信息
+message FileInfo {
+    string file_id = 1;         // 文件ID
+    string filename = 2;        // 文件名
+    uint64 filesize = 3;        // 文件大小
+    string file_hash = 4;       // 文件哈希值
+    string file_type = 5;       // 文件类型
+    string upload_time = 6;     // 上传时间
+    int32 uploader_id = 7;      // 上传者ID
+    string uploader_name = 8;   // 上传者名称
+    uint32 download_count = 9;  // 下载次数
+}
+
+// ==================== 服务发现和配置相关消息 ====================
+
+// 服务实例信息
+message ServiceInstance {
+    string id = 1;              // 实例ID
+    string name = 2;            // 服务名称
+    string host = 3;            // 主机地址
+    int32 port = 4;             // 端口号
+    repeated string tags = 5;   // 服务标签
+    map<string, string> metadata = 6;  // 元数据
+    string status = 7;          // 状态：healthy, unhealthy
+    int64 timestamp = 8;        // 时间戳
+}
+
+// 服务器信息
+message ServerInfo {
+    string server_id = 1;           // 服务器唯一ID
+    string host = 2;                // 服务器地址
+    int32 port = 3;                 // 服务器端口
+    string status = 4;              // 服务器状态 online/offline/maintenance
+    int32 load = 5;                 // 当前负载 (0-100)
+    int32 connections = 6;          // 当前连接数
+    int32 max_connections = 7;      // 最大连接数
+    int64 last_heartbeat = 8;       // 最后心跳时间
+    map<string, string> metadata = 9;  // 额外元数据
+}
+
+// 集群事件消息
+message ClusterEvent {
+    string event = 1;               // 事件类型: server_online, server_offline, server_recovery, server_failure
+    string server_id = 2;           // 服务器ID
+    ServerInfo server_info = 3;     // 服务器信息
+    int64 timestamp = 4;            // 事件时间戳
+}
+
+// 配置项
+message ConfigItem {
+    string key = 1;                 // 配置键
+    string value = 2;               // 配置值
+    string type = 3;                // 配置类型: string, int, bool, json
+    string description = 4;         // 配置说明
+    bool is_encrypted = 5;          // 是否加密存储
+}

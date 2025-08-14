@@ -1,0 +1,564 @@
+syntax = "proto3";
+
+package chat.service;
+
+// 用户认证服务
+service AuthService {
+    rpc Login(LoginRequest) returns (LoginResponse);
+    rpc Register(RegisterRequest) returns (RegisterResponse);
+    rpc Logout(LogoutRequest) returns (LogoutResponse);
+    rpc ValidateToken(ValidateTokenRequest) returns (ValidateTokenResponse);
+}
+
+// 一对一聊天服务
+service PrivateChatService {
+    rpc SendMessage(SendMessageRequest) returns (SendMessageResponse);
+    rpc GetChatHistory(GetChatHistoryRequest) returns (GetChatHistoryResponse);
+    rpc SearchMessages(SearchMessagesRequest) returns (SearchMessagesResponse);
+    rpc GetUnreadCount(GetUnreadCountRequest) returns (GetUnreadCountResponse);
+    rpc MarkAsRead(MarkAsReadRequest) returns (MarkAsReadResponse);
+}
+
+// 群聊服务
+service GroupChatService {
+    rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
+    rpc JoinGroup(JoinGroupRequest) returns (JoinGroupResponse);
+    rpc LeaveGroup(LeaveGroupRequest) returns (LeaveGroupResponse);
+    rpc SendGroupMessage(SendGroupMessageRequest) returns (SendGroupMessageResponse);
+    rpc GetGroupHistory(GetGroupHistoryRequest) returns (GetGroupHistoryResponse);
+    rpc GetGroupInfo(GetGroupInfoRequest) returns (GetGroupInfoResponse);
+    rpc SearchGroup(SearchGroupRequest) returns (SearchGroupResponse);
+    rpc ApproveJoinRequest(ApproveJoinRequest) returns (ApproveJoinResponse);
+}
+
+// 好友管理服务
+service FriendService {
+    rpc SendFriendRequest(SendFriendRequestRequest) returns (SendFriendRequestResponse);
+    rpc AcceptFriendRequest(AcceptFriendRequestRequest) returns (AcceptFriendRequestResponse);
+    rpc RejectFriendRequest(RejectFriendRequestRequest) returns (RejectFriendRequestResponse);
+    rpc GetFriendList(GetFriendListRequest) returns (GetFriendListResponse);
+    rpc DeleteFriend(DeleteFriendRequest) returns (DeleteFriendResponse);
+    rpc SearchUsers(SearchUsersRequest) returns (SearchUsersResponse);
+}
+
+// 文件传输服务
+service FileService {
+    rpc UploadFile(stream UploadFileRequest) returns (UploadFileResponse);
+    rpc DownloadFile(DownloadFileRequest) returns (stream DownloadFileResponse);
+    rpc GetFileInfo(GetFileInfoRequest) returns (GetFileInfoResponse);
+    rpc DeleteFile(DeleteFileRequest) returns (DeleteFileResponse);
+    rpc SendFileNotification(SendFileNotificationRequest) returns (SendFileNotificationResponse);
+}
+
+// 位置服务
+service LocationService {
+    rpc UpdateLocation(UpdateLocationRequest) returns (UpdateLocationResponse);
+    rpc FindNearbyUsers(FindNearbyUsersRequest) returns (FindNearbyUsersResponse);
+    rpc SetLocationVisibility(SetLocationVisibilityRequest) returns (SetLocationVisibilityResponse);
+    rpc GetUserLocation(GetUserLocationRequest) returns (GetUserLocationResponse);
+}
+
+// 通知服务
+service NotificationService {
+    rpc SendNotification(SendNotificationRequest) returns (SendNotificationResponse);
+    rpc GetNotifications(GetNotificationsRequest) returns (GetNotificationsResponse);
+    rpc MarkNotificationRead(MarkNotificationReadRequest) returns (MarkNotificationReadResponse);
+    rpc SubscribeNotifications(SubscribeNotificationsRequest) returns (stream NotificationEvent);
+}
+
+// 消息定义
+
+// 通用消息
+message User {
+    int32 id = 1;
+    string name = 2;
+    string email = 3;
+    string state = 4;
+    int64 create_time = 5;
+    int64 last_online = 6;
+}
+
+message BaseResponse {
+    int32 errno = 1;
+    string errmsg = 2;
+}
+
+// 认证相关消息
+message LoginRequest {
+    string email = 1;
+    string password = 2;
+}
+
+message LoginResponse {
+    BaseResponse base = 1;
+    User user = 2;
+    string token = 3;
+    repeated User friends = 4;
+    repeated Group groups = 5;
+    repeated OfflineMessage offline_messages = 6;
+}
+
+message RegisterRequest {
+    string name = 1;
+    string email = 2;
+    string password = 3;
+}
+
+message RegisterResponse {
+    BaseResponse base = 1;
+    User user = 2;
+}
+
+message LogoutRequest {
+    int32 user_id = 1;
+    string token = 2;
+}
+
+message LogoutResponse {
+    BaseResponse base = 1;
+}
+
+message ValidateTokenRequest {
+    string token = 1;
+}
+
+message ValidateTokenResponse {
+    BaseResponse base = 1;
+    User user = 2;
+}
+
+// 私聊相关消息
+message SendMessageRequest {
+    int32 from_id = 1;
+    int32 to_id = 2;
+    string message = 3;
+    string message_type = 4;
+    int64 timestamp = 5;
+}
+
+message SendMessageResponse {
+    BaseResponse base = 1;
+    int64 message_id = 2;
+}
+
+message GetChatHistoryRequest {
+    int32 user_id = 1;
+    int32 friend_id = 2;
+    int32 page = 3;
+    int32 page_size = 4;
+}
+
+message GetChatHistoryResponse {
+    BaseResponse base = 1;
+    repeated PrivateMessage messages = 2;
+    int32 total_count = 3;
+}
+
+message PrivateMessage {
+    int64 id = 1;
+    int32 from_id = 2;
+    int32 to_id = 3;
+    string message = 4;
+    string message_type = 5;
+    int64 timestamp = 6;
+    bool is_read = 7;
+}
+
+message SearchMessagesRequest {
+    int32 user_id = 1;
+    int32 friend_id = 2;
+    string keyword = 3;
+    int32 page = 4;
+    int32 page_size = 5;
+}
+
+message SearchMessagesResponse {
+    BaseResponse base = 1;
+    repeated PrivateMessage messages = 2;
+    int32 total_count = 3;
+}
+
+message GetUnreadCountRequest {
+    int32 user_id = 1;
+}
+
+message GetUnreadCountResponse {
+    BaseResponse base = 1;
+    int32 unread_count = 2;
+}
+
+message MarkAsReadRequest {
+    int32 user_id = 1;
+    int32 friend_id = 2;
+}
+
+message MarkAsReadResponse {
+    BaseResponse base = 1;
+}
+
+// 群聊相关消息
+message Group {
+    int32 id = 1;
+    string name = 2;
+    string desc = 3;
+    int32 owner_id = 4;
+    int64 create_time = 5;
+    repeated GroupUser users = 6;
+}
+
+message GroupUser {
+    int32 id = 1;
+    int32 user_id = 2;
+    int32 group_id = 3;
+    string role = 4;
+    int64 create_time = 5;
+}
+
+message CreateGroupRequest {
+    int32 user_id = 1;
+    string group_name = 2;
+    string group_desc = 3;
+}
+
+message CreateGroupResponse {
+    BaseResponse base = 1;
+    Group group = 2;
+}
+
+message JoinGroupRequest {
+    int32 user_id = 1;
+    int32 group_id = 2;
+    string reason = 3;
+}
+
+message JoinGroupResponse {
+    BaseResponse base = 1;
+}
+
+message LeaveGroupRequest {
+    int32 user_id = 1;
+    int32 group_id = 2;
+}
+
+message LeaveGroupResponse {
+    BaseResponse base = 1;
+}
+
+message SendGroupMessageRequest {
+    int32 from_id = 1;
+    int32 group_id = 2;
+    string message = 3;
+    string message_type = 4;
+    int64 timestamp = 5;
+}
+
+message SendGroupMessageResponse {
+    BaseResponse base = 1;
+    int64 message_id = 2;
+}
+
+message GetGroupHistoryRequest {
+    int32 user_id = 1;
+    int32 group_id = 2;
+    int32 page = 3;
+    int32 page_size = 4;
+}
+
+message GetGroupHistoryResponse {
+    BaseResponse base = 1;
+    repeated GroupMessage messages = 2;
+    int32 total_count = 3;
+}
+
+message GroupMessage {
+    int64 id = 1;
+    int32 from_id = 2;
+    int32 group_id = 3;
+    string message = 4;
+    string message_type = 5;
+    int64 timestamp = 6;
+    string from_name = 7;
+}
+
+message GetGroupInfoRequest {
+    int32 user_id = 1;
+    int32 group_id = 2;
+}
+
+message GetGroupInfoResponse {
+    BaseResponse base = 1;
+    Group group = 2;
+}
+
+message SearchGroupRequest {
+    string keyword = 1;
+    int32 page = 2;
+    int32 page_size = 3;
+}
+
+message SearchGroupResponse {
+    BaseResponse base = 1;
+    repeated Group groups = 2;
+    int32 total_count = 3;
+}
+
+message ApproveJoinRequest {
+    int32 approver_id = 1;
+    int32 group_id = 2;
+    int32 user_id = 3;
+    bool approved = 4;
+}
+
+message ApproveJoinResponse {
+    BaseResponse base = 1;
+}
+
+// 好友相关消息
+message SendFriendRequestRequest {
+    int32 from_id = 1;
+    int32 to_id = 2;
+    string message = 3;
+}
+
+message SendFriendRequestResponse {
+    BaseResponse base = 1;
+}
+
+message AcceptFriendRequestRequest {
+    int32 user_id = 1;
+    int32 friend_id = 2;
+}
+
+message AcceptFriendRequestResponse {
+    BaseResponse base = 1;
+}
+
+message RejectFriendRequestRequest {
+    int32 user_id = 1;
+    int32 friend_id = 2;
+}
+
+message RejectFriendRequestResponse {
+    BaseResponse base = 1;
+}
+
+message GetFriendListRequest {
+    int32 user_id = 1;
+}
+
+message GetFriendListResponse {
+    BaseResponse base = 1;
+    repeated User friends = 2;
+}
+
+message DeleteFriendRequest {
+    int32 user_id = 1;
+    int32 friend_id = 2;
+}
+
+message DeleteFriendResponse {
+    BaseResponse base = 1;
+}
+
+message SearchUsersRequest {
+    string keyword = 1;
+    int32 page = 2;
+    int32 page_size = 3;
+}
+
+message SearchUsersResponse {
+    BaseResponse base = 1;
+    repeated User users = 2;
+    int32 total_count = 3;
+}
+
+// 文件相关消息
+message FileInfo {
+    string file_id = 1;
+    string filename = 2;
+    int64 file_size = 3;
+    string file_type = 4;
+    string file_path = 5;
+    int32 uploader_id = 6;
+    int64 upload_time = 7;
+}
+
+message UploadFileRequest {
+    oneof data {
+        FileMetadata metadata = 1;
+        bytes chunk = 2;
+    }
+}
+
+message FileMetadata {
+    string filename = 1;
+    int64 file_size = 2;
+    string file_type = 3;
+    int32 uploader_id = 4;
+}
+
+message UploadFileResponse {
+    BaseResponse base = 1;
+    FileInfo file_info = 2;
+}
+
+message DownloadFileRequest {
+    string file_id = 1;
+    int32 user_id = 2;
+    int64 offset = 3;
+    int32 chunk_size = 4;
+}
+
+message DownloadFileResponse {
+    oneof data {
+        FileInfo file_info = 1;
+        bytes chunk = 2;
+    }
+}
+
+message GetFileInfoRequest {
+    string file_id = 1;
+    int32 user_id = 2;
+}
+
+message GetFileInfoResponse {
+    BaseResponse base = 1;
+    FileInfo file_info = 2;
+}
+
+message DeleteFileRequest {
+    string file_id = 1;
+    int32 user_id = 2;
+}
+
+message DeleteFileResponse {
+    BaseResponse base = 1;
+}
+
+message SendFileNotificationRequest {
+    int32 from_id = 1;
+    int32 to_id = 2;
+    string file_id = 3;
+    string message = 4;
+}
+
+message SendFileNotificationResponse {
+    BaseResponse base = 1;
+}
+
+// 位置相关消息
+message Location {
+    double latitude = 1;
+    double longitude = 2;
+    string address = 3;
+    int64 timestamp = 4;
+}
+
+message UpdateLocationRequest {
+    int32 user_id = 1;
+    Location location = 2;
+}
+
+message UpdateLocationResponse {
+    BaseResponse base = 1;
+}
+
+message FindNearbyUsersRequest {
+    int32 user_id = 1;
+    double radius = 2; // 半径（公里）
+    int32 limit = 3;
+}
+
+message FindNearbyUsersResponse {
+    BaseResponse base = 1;
+    repeated NearbyUser users = 2;
+}
+
+message NearbyUser {
+    User user = 1;
+    Location location = 2;
+    double distance = 3; // 距离（公里）
+}
+
+message SetLocationVisibilityRequest {
+    int32 user_id = 1;
+    bool visible = 2;
+}
+
+message SetLocationVisibilityResponse {
+    BaseResponse base = 1;
+}
+
+message GetUserLocationRequest {
+    int32 user_id = 1;
+    int32 target_user_id = 2;
+}
+
+message GetUserLocationResponse {
+    BaseResponse base = 1;
+    Location location = 2;
+}
+
+// 通知相关消息
+message Notification {
+    int64 id = 1;
+    int32 user_id = 2;
+    string type = 3;
+    string title = 4;
+    string content = 5;
+    string data = 6; // JSON格式的额外数据
+    bool is_read = 7;
+    int64 create_time = 8;
+}
+
+message SendNotificationRequest {
+    int32 user_id = 1;
+    string type = 2;
+    string title = 3;
+    string content = 4;
+    string data = 5;
+}
+
+message SendNotificationResponse {
+    BaseResponse base = 1;
+    int64 notification_id = 2;
+}
+
+message GetNotificationsRequest {
+    int32 user_id = 1;
+    int32 page = 2;
+    int32 page_size = 3;
+    bool unread_only = 4;
+}
+
+message GetNotificationsResponse {
+    BaseResponse base = 1;
+    repeated Notification notifications = 2;
+    int32 total_count = 3;
+}
+
+message MarkNotificationReadRequest {
+    int32 user_id = 1;
+    int64 notification_id = 2;
+}
+
+message MarkNotificationReadResponse {
+    BaseResponse base = 1;
+}
+
+message SubscribeNotificationsRequest {
+    int32 user_id = 1;
+}
+
+message NotificationEvent {
+    Notification notification = 1;
+}
+
+// 离线消息
+message OfflineMessage {
+    int64 id = 1;
+    int32 user_id = 2;
+    string message = 3;
+    string message_type = 4;
+    int64 timestamp = 5;
+}

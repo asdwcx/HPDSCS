@@ -1,0 +1,107 @@
+{
+  "zookeeper": {
+    "hosts": "127.0.0.1:2181",
+    "session_timeout": 30000
+  },
+  "services": {
+    "AuthService": {
+      "host": "127.0.0.1",
+      "port": 50001,
+      "enabled": true,
+      "metadata": {
+        "description": "User authentication and authorization service",
+        "version": "1.0.0",
+        "max_connections": "1000"
+      }
+    },
+    "PrivateChatService": {
+      "host": "127.0.0.1",
+      "port": 50002,
+      "enabled": true,
+      "metadata": {
+        "description": "One-on-one chat messaging service",
+        "version": "1.0.0",
+        "max_connections": "2000"
+      }
+    },
+    "GroupChatService": {
+      "host": "127.0.0.1",
+      "port": 50003,
+      "enabled": true,
+      "metadata": {
+        "description": "Group chat messaging service",
+        "version": "1.0.0",
+        "max_connections": "1500"
+      }
+    },
+    "FriendService": {
+      "host": "127.0.0.1",
+      "port": 50004,
+      "enabled": true,
+      "metadata": {
+        "description": "Friend management and social features",
+        "version": "1.0.0",
+        "max_connections": "800"
+      }
+    },
+    "FileService": {
+      "host": "127.0.0.1",
+      "port": 50005,
+      "enabled": true,
+      "metadata": {
+        "description": "File upload, download and transfer service",
+        "version": "1.0.0",
+        "max_connections": "500",
+        "max_file_size": "104857600"
+      }
+    },
+    "LocationService": {
+      "host": "127.0.0.1",
+      "port": 50006,
+      "enabled": true,
+      "metadata": {
+        "description": "Location-based services and nearby users",
+        "version": "1.0.0",
+        "max_connections": "600"
+      }
+    },
+    "NotificationService": {
+      "host": "127.0.0.1",
+      "port": 50007,
+      "enabled": true,
+      "metadata": {
+        "description": "Real-time notification and push service",
+        "version": "1.0.0",
+        "max_connections": "3000"
+      }
+    }
+  },
+  "database": {
+    "mysql": {
+      "host": "127.0.0.1",
+      "port": 3306,
+      "username": "root",
+      "password": "",
+      "database": "chat",
+      "max_connections": 20
+    },
+    "redis": {
+      "host": "127.0.0.1",
+      "port": 6379,
+      "password": "",
+      "database": 0,
+      "max_connections": 10
+    }
+  },
+  "load_balancing": {
+    "strategy": "round_robin",
+    "health_check_interval": 10,
+    "failure_threshold": 3
+  },
+  "logging": {
+    "level": "INFO",
+    "file_path": "./logs/distributed_services.log",
+    "max_file_size": "100MB",
+    "max_files": 10
+  }
+}
